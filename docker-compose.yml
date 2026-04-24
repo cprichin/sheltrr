@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:15
+    container_name: sheltrr-db
+    restart: always
+    environment:
+      POSTGRES_DB: sheltrr
+      POSTGRES_USER: sheltrr
+      POSTGRES_PASSWORD: sheltrr
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./backend
+    container_name: sheltrr-api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://sheltrr:sheltrr@db/sheltrr
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  dashboard:
+    build: ./dashboard
+    container_name: sheltrr-dashboard
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
