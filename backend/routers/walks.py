@@ -158,3 +158,53 @@ def get_dog_status(db: Session = Depends(get_db)):
             })
 
     return result
+
+@router.get("/summary")
+def get_daily_summary(
+    date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    from datetime import date as date_type
+    
+    # Default to today if no date provided
+    if date:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    else:
+        target_date = datetime.now().date()
+
+    start = datetime.combine(target_date, datetime.min.time())
+    end = datetime.combine(target_date, datetime.max.time())
+
+    dogs = db.query(Dog).all()
+    summary = []
+
+    for dog in dogs:
+        walks = db.query(Walk).filter(
+            Walk.dog_id == dog.id,
+            Walk.status == "completed",
+            Walk.start_time >= start,
+            Walk.start_time <= end
+        ).all()
+
+        summary.append({
+            "dog_id": dog.id,
+            "dog_name": dog.name,
+            "breed": dog.breed,
+            "cage_number": dog.cage_number,
+            "location": dog.location,
+            "walk_count": len(walks),
+            "total_minutes": sum(w.duration_minutes or 0 for w in walks),
+            "volunteers": list(set(w.volunteer.name for w in walks)),
+            "walked": len(walks) > 0
+        })
+
+    total_dogs = len(summary)
+    walked_today = sum(1 for d in summary if d["walked"])
+
+    return {
+        "date": target_date.isoformat(),
+        "total_dogs": total_dogs,
+        "walked_today": walked_today,
+        "not_walked_today": total_dogs - walked_today,
+        "dogs": sorted(summary, key=lambda x: (not x["walked"], x["dog_name"]))
+    }
