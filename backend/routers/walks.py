@@ -96,3 +96,65 @@ def get_walk_history(
         "end_time": w.end_time,
         "duration_minutes": w.duration_minutes
     } for w in walks]
+
+
+@router.get("/status")
+def get_dog_status(db: Session = Depends(get_db)):
+    from datetime import date
+    dogs = db.query(Dog).all()
+    result = []
+
+    for dog in dogs:
+        # Check if currently out
+        active = db.query(Walk).filter(
+            Walk.dog_id == dog.id,
+            Walk.status == "active"
+        ).first()
+
+        if active:
+            result.append({
+                "id": dog.id,
+                "name": dog.name,
+                "breed": dog.breed,
+                "cage_number": dog.cage_number,
+                "location": dog.location,
+                "status": "out",
+                "volunteer_name": active.volunteer.name,
+                "start_time": active.start_time,
+                "duration_minutes": int((datetime.now() - active.start_time).seconds / 60)
+            })
+            continue
+
+        # Check if walked today
+        today_walk = db.query(Walk).filter(
+            Walk.dog_id == dog.id,
+            Walk.status == "completed",
+            Walk.start_time >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        ).first()
+
+        if today_walk:
+            result.append({
+                "id": dog.id,
+                "name": dog.name,
+                "breed": dog.breed,
+                "cage_number": dog.cage_number,
+                "location": dog.location,
+                "status": "walked",
+                "volunteer_name": today_walk.volunteer.name,
+                "start_time": today_walk.start_time,
+                "duration_minutes": today_walk.duration_minutes
+            })
+        else:
+            result.append({
+                "id": dog.id,
+                "name": dog.name,
+                "breed": dog.breed,
+                "cage_number": dog.cage_number,
+                "location": dog.location,
+                "status": "not_walked",
+                "volunteer_name": None,
+                "start_time": None,
+                "duration_minutes": None
+            })
+
+    return result
