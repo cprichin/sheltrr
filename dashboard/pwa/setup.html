@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Sheltrr Setup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; padding: 20px; }
+    h1 { color: #1F4E79; font-size: 1.6rem; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+
+    .tabs {
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .tab {
+      flex: 1; min-width: 80px; padding: 10px; border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      background: white; color: #555;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: all 0.2s;
+    }
+    .tab.active { background: #1F4E79; color: white; }
+
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 16px; }
+    .card h2 { color: #1F4E79; font-size: 1.05rem; margin-bottom: 14px; }
+
+    .input {
+      width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0;
+      border-radius: 10px; font-size: 0.95rem; margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .input:focus { outline: none; border-color: #1F4E79; }
+    .input.filled { border-color: #4CAF50; background: #f1fff3; }
+    select.input { background: white; cursor: pointer; }
+
+    .tap-btn {
+      width: 100%; padding: 12px; border: 2px dashed #1F4E79;
+      border-radius: 10px; background: #f0f6ff; color: #1F4E79;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .tap-btn.scanning { background: #fff3e0; border-color: #e65100; color: #e65100; animation: pulse 1.2s infinite; }
+    .tap-btn.done { background: #f1fff3; border-color: #4CAF50; color: #2e7d32; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-bottom: 8px; }
+    .btn-primary { background: #1F4E79; color: white; }
+    .btn-primary:hover { background: #174069; }
+    .btn-clear { background: #f0f4f8; color: #555; }
+
+    .status { padding: 10px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; text-align: center; margin-top: 6px; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+    .status-idle { background: #f0f4f8; color: #888; }
+    .status-success { background: #e8f5e9; color: #2e7d32; }
+    .status-error { background: #ffebee; color: #c62828; }
+
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f4f8; font-size: 0.9rem; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-name { font-weight: 600; color: #1a1a1a; }
+    .list-item-sub { font-size: 0.78rem; color: #888; font-family: monospace; }
+
+    .badge { padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+    .badge-indoor { background: #e3f2fd; color: #1565c0; }
+    .badge-outdoor { background: #e8f5e9; color: #2e7d32; }
+    .badge-vol { background: #f3e5f5; color: #6a1b9a; }
+    .badge-assigned { background: #e8f5e9; color: #2e7d32; }
+    .badge-empty { background: #ffebee; color: #c62828; }
+
+    .delete-btn { background: #ffebee; color: #c62828; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 600; }
+    .delete-btn:hover { background: #ffcdd2; }
+
+    .assign-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.82rem; cursor: pointer; max-width: 140px; }
+
+    .empty { color: #aaa; text-align: center; padding: 20px; font-size: 0.9rem; }
+    .section-hidden { display: none; }
+
+    .form-row { display: flex; gap: 8px; }
+    .form-row .input { flex: 1; }
+  </style>
+</head>
+<body>
+
+  <h1>🐾 Sheltrr Setup</h1>
+  <p class="subtitle">Admin panel — registration & assignment</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('cages')">🏠 Cages</button>
+    <button class="tab" onclick="showTab('dogs')">🐕 Dogs</button>
+    <button class="tab" onclick="showTab('volunteers')">👤 Volunteers</button>
+  </div>
+
+  <!-- CAGES TAB -->
+  <div id="tab-cages">
+    <div class="card">
+      <h2>Register a Cage</h2>
+      <input class="input" id="cage-number" type="text" placeholder="Cage number (e.g. A1) *" />
+      <select class="input" id="cage-location">
+        <option value="indoor">Indoor</option>
+        <option value="outdoor">Outdoor Run</option>
+      </select>
+      <button class="tap-btn" id="cage-tap-btn" onclick="startNFCScan('cage')">
+        📡 Tap cage NFC tag to read UID
+      </button>
+      <input class="input" id="cage-uid" type="text" placeholder="Tag UID (auto-filled by tap)" />
+      <button class="btn btn-primary" onclick="saveCage()">Register Cage</button>
+      <button class="btn btn-clear" onclick="clearCageForm()">Clear</button>
+      <div class="status status-idle" id="cage-status">Ready</div>
+    </div>
+
+    <div class="card">
+      <h2>All Cages</h2>
+      <div id="cage-list"><p class="empty">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- DOGS TAB -->
+  <div id="tab-dogs" class="section-hidden">
+    <div class="card">
+      <h2>Add a Dog</h2>
+      <div class="form-row">
+        <input class="input" id="dog-name" type="text" placeholder="Dog name *" />
+        <input class="input" id="dog-breed" type="text" placeholder="Breed (optional)" />
+      </div>
+      <button class="btn btn-primary" onclick="saveDog()">Add Dog</button>
+      <button class="btn btn-clear" onclick="clearDogForm()">Clear</button>
+      <div class="status status-idle" id="dog-status">Ready</div>
+    </div>
+
+    <div class="card">
+      <h2>All Dogs</h2>
+      <div id="dog-list"><p class="empty">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- VOLUNTEERS TAB -->
+  <div id="tab-volunteers" class="section-hidden">
+    <div class="card">
+      <h2>Add a Volunteer</h2>
+      <input class="input" id="vol-name" type="text" placeholder="Full name *" />
+      <button class="tap-btn" id="vol-tap-btn" onclick="startNFCScan('volunteer')">
+        📡 Tap volunteer fob to read UID
+      </button>
+      <input class="input" id="vol-uid" type="text" placeholder="Fob UID (auto-filled by tap)" />
+      <button class="btn btn-primary" onclick="saveVolunteer()">Add Volunteer</button>
+      <button class="btn btn-clear" onclick="clearVolForm()">Clear</button>
+      <div class="status status-idle" id="vol-status">Ready</div>
+    </div>
+
+    <div class="card">
+      <h2>All Volunteers</h2>
+      <div id="vol-list"><p class="empty">Loading...</p></div>
+    </div>
+  </div>
+
+<script>
+  const API = "http://localhost:8000/api";
+  let nfcReader = null;
+  let currentScanTarget = null;
+  let allDogs = [];
+
+  // ── TAB SWITCHING ──────────────────────────────────────────────────────────
+  function showTab(tab) {
+    ["cages", "dogs", "volunteers"].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle("section-hidden", t !== tab);
+    });
+    document.querySelectorAll(".tab").forEach((btn, i) => {
+      btn.classList.toggle("active", ["cages", "dogs", "volunteers"][i] === tab);
+    });
+    if (tab === "cages") { fetchCages(); fetchDogs(); }
+    if (tab === "dogs") fetchDogs();
+    if (tab === "volunteers") fetchVolunteers();
+  }
+
+  // ── NFC SCANNING ───────────────────────────────────────────────────────────
+  async function startNFCScan(target) {
+    currentScanTarget = target;
+    const btnId = target === "cage" ? "cage-tap-btn" : "vol-tap-btn";
+    const btn = document.getElementById(btnId);
+
+    if (!("NDEFReader" in window)) {
+      const uid = prompt("NFC not available. Enter UID manually:");
+      if (uid) fillUID(target, uid.trim().toUpperCase());
+      return;
+    }
+
+    try {
+      if (!nfcReader) nfcReader = new NDEFReader();
+      await nfcReader.scan();
+      btn.textContent = "📡 Scanning — tap tag now...";
+      btn.classList.add("scanning");
+
+      nfcReader.onreading = ({ serialNumber }) => {
+        const uid = serialNumber.replace(/:/g, "").toUpperCase();
+        fillUID(target, uid);
+        btn.textContent = "✅ UID captured";
+        btn.classList.remove("scanning");
+        btn.classList.add("done");
+        setTimeout(() => {
+          btn.textContent = target === "cage" ? "📡 Tap cage NFC tag to read UID" : "📡 Tap volunteer fob to read UID";
+          btn.classList.remove("done");
+        }, 3000);
+      };
+    } catch (err) {
+      btn.classList.remove("scanning");
+      const uid = prompt("Could not start NFC. Enter UID manually:");
+      if (uid) fillUID(target, uid.trim().toUpperCase());
+    }
+  }
+
+  function fillUID(target, uid) {
+    const inputId = target === "cage" ? "cage-uid" : "vol-uid";
+    const input = document.getElementById(inputId);
+    input.value = uid;
+    input.classList.add("filled");
+  }
+
+  // ── SAVE CAGE ──────────────────────────────────────────────────────────────
+  async function saveCage() {
+    const cage_number = document.getElementById("cage-number").value.trim();
+    const nfc_tag_uid = document.getElementById("cage-uid").value.trim().toUpperCase();
+    const location = document.getElementById("cage-location").value;
+
+    if (!cage_number || !nfc_tag_uid) {
+      setStatus("cage", "Cage number and tag UID are required", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/cages/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cage_number, nfc_tag_uid, location })
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus("cage", `Error: ${data.detail}`, "error"); return; }
+      setStatus("cage", `✅ Cage ${cage_number} registered`, "success");
+      clearCageForm();
+      fetchCages();
+    } catch { setStatus("cage", "Connection error", "error"); }
+  }
+
+  // ── SAVE DOG ───────────────────────────────────────────────────────────────
+  async function saveDog() {
+    const name = document.getElementById("dog-name").value.trim();
+    const breed = document.getElementById("dog-breed").value.trim();
+
+    if (!name) { setStatus("dog", "Name is required", "error"); return; }
+
+    try {
+      const res = await fetch(`${API}/dogs/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, breed: breed || null })
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus("dog", `Error: ${data.detail}`, "error"); return; }
+      setStatus("dog", `✅ ${name} added`, "success");
+      clearDogForm();
+      fetchDogs();
+    } catch { setStatus("dog", "Connection error", "error"); }
+  }
+
+  // ── SAVE VOLUNTEER ─────────────────────────────────────────────────────────
+  async function saveVolunteer() {
+    const name = document.getElementById("vol-name").value.trim();
+    const nfc_fob_uid = document.getElementById("vol-uid").value.trim().toUpperCase();
+
+    if (!name || !nfc_fob_uid) { setStatus("vol", "Name and fob UID are required", "error"); return; }
+
+    try {
+      const res = await fetch(`${API}/volunteers/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, nfc_fob_uid })
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus("vol", `Error: ${data.detail}`, "error"); return; }
+      setStatus("vol", `✅ ${name} added`, "success");
+      clearVolForm();
+      fetchVolunteers();
+    } catch { setStatus("vol", "Connection error", "error"); }
+  }
+
+  // ── ASSIGN DOG TO CAGE ─────────────────────────────────────────────────────
+  async function assignDog(cageId, dogId) {
+    try {
+      await fetch(`${API}/cages/${cageId}/assign`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dog_id: dogId ? parseInt(dogId) : null })
+      });
+      fetchCages();
+    } catch { alert("Could not assign dog"); }
+  }
+
+  // ── FETCH & RENDER CAGES ───────────────────────────────────────────────────
+  async function fetchCages() {
+    try {
+      const res = await fetch(`${API}/cages/`);
+      const cages = await res.json();
+      const el = document.getElementById("cage-list");
+      if (cages.length === 0) { el.innerHTML = '<p class="empty">No cages registered yet</p>'; return; }
+      el.innerHTML = cages.map(c => `
+        <div class="list-item">
+          <div>
+            <div class="list-item-name">Cage ${c.cage_number}</div>
+            <div class="list-item-sub">${c.nfc_tag_uid}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="badge ${c.location === 'indoor' ? 'badge-indoor' : 'badge-outdoor'}">
+              ${c.location === 'indoor' ? 'Indoor' : 'Outdoor'}
+            </span>
+            <select class="assign-select" onchange="assignDog(${c.id}, this.value)">
+              <option value="">— Empty —</option>
+              ${allDogs.map(d => `<option value="${d.id}" ${c.current_dog_id === d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
+            </select>
+            <button class="delete-btn" onclick="deleteCage(${c.id}, '${c.cage_number}')">✕</button>
+          </div>
+        </div>
+      `).join("");
+    } catch { document.getElementById("cage-list").innerHTML = '<p class="empty">Could not load cages</p>'; }
+  }
+
+  // ── FETCH & RENDER DOGS ────────────────────────────────────────────────────
+  async function fetchDogs() {
+    try {
+      const res = await fetch(`${API}/dogs/`);
+      allDogs = await res.json();
+      const el = document.getElementById("dog-list");
+      if (allDogs.length === 0) { el.innerHTML = '<p class="empty">No dogs registered yet</p>'; return; }
+      el.innerHTML = allDogs.map(d => `
+        <div class="list-item">
+          <div>
+            <div class="list-item-name">${d.name}</div>
+            ${d.breed ? `<div class="list-item-sub">${d.breed}</div>` : ''}
+          </div>
+          <button class="delete-btn" onclick="deleteDog(${d.id}, '${d.name}')">✕</button>
+        </div>
+      `).join("");
+    } catch { document.getElementById("dog-list").innerHTML = '<p class="empty">Could not load dogs</p>'; }
+  }
+
+  // ── FETCH & RENDER VOLUNTEERS ──────────────────────────────────────────────
+  async function fetchVolunteers() {
+    try {
+      const res = await fetch(`${API}/volunteers/`);
+      const vols = await res.json();
+      const el = document.getElementById("vol-list");
+      if (vols.length === 0) { el.innerHTML = '<p class="empty">No volunteers registered yet</p>'; return; }
+      el.innerHTML = vols.map(v => `
+        <div class="list-item">
+          <div>
+            <div class="list-item-name">${v.name}</div>
+            <div class="list-item-sub">${v.nfc_fob_uid}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="badge badge-vol">Volunteer</span>
+            <button class="delete-btn" onclick="deleteVolunteer(${v.id}, '${v.name}')">✕</button>
+          </div>
+        </div>
+      `).join("");
+    } catch { document.getElementById("vol-list").innerHTML = '<p class="empty">Could not load volunteers</p>'; }
+  }
+
+  // ── DELETE FUNCTIONS ───────────────────────────────────────────────────────
+  async function deleteCage(id, number) {
+    if (!confirm(`Remove cage ${number}?`)) return;
+    await fetch(`${API}/cages/${id}`, { method: "DELETE" });
+    fetchCages();
+  }
+
+  async function deleteDog(id, name) {
+    if (!confirm(`Remove ${name}?`)) return;
+    await fetch(`${API}/dogs/${id}`, { method: "DELETE" });
+    fetchDogs();
+  }
+
+  async function deleteVolunteer(id, name) {
+    if (!confirm(`Remove ${name}?`)) return;
+    await fetch(`${API}/volunteers/${id}`, { method: "DELETE" });
+    fetchVolunteers();
+  }
+
+  // ── HELPERS ────────────────────────────────────────────────────────────────
+  function setStatus(target, msg, type) {
+    const el = document.getElementById(`${target}-status`);
+    el.textContent = msg;
+    el.className = `status status-${type}`;
+    setTimeout(() => { el.textContent = "Ready"; el.className = "status status-idle"; }, 4000);
+  }
+
+  function clearCageForm() {
+    document.getElementById("cage-number").value = "";
+    document.getElementById("cage-location").value = "indoor";
+    const uid = document.getElementById("cage-uid");
+    uid.value = "";
+    uid.classList.remove("filled");
+  }
+
+  function clearDogForm() {
+    document.getElementById("dog-name").value = "";
+    document.getElementById("dog-breed").value = "";
+  }
+
+  function clearVolForm() {
+    document.getElementById("vol-name").value = "";
+    const uid = document.getElementById("vol-uid");
+    uid.value = "";
+    uid.classList.remove("filled");
+  }
+
+  // Load on start
+  fetchCages();
+  fetchDogs();
+</script>
+</body>
+</html>

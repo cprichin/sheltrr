@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>PawTrack Scanner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #1F4E79;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ddd;
+      transition: background 0.3s;
+    }
+
+    .step-dot.active { background: #1F4E79; }
+    .step-dot.done { background: #4CAF50; }
+
+    .step-label {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 16px;
+      min-height: 24px;
+    }
+
+    .uid-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+      text-transform: uppercase;
+    }
+
+    .uid-input:focus {
+      outline: none;
+      border-color: #1F4E79;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: #1F4E79;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary:hover { background: #174069; }
+
+    .btn-secondary {
+      background: #f0f4f8;
+      color: #555;
+    }
+
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .status-box {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 500;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .status-idle { background: #f0f4f8; color: #888; }
+    .status-success { background: #e8f5e9; color: #2e7d32; }
+    .status-error { background: #ffebee; color: #c62828; }
+    .status-loading { background: #e3f2fd; color: #1565c0; }
+
+    .volunteer-badge {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .hidden { display: none; }
+
+    .nfc-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🐾</div>
+  <h1>PawTrack</h1>
+  <p class="subtitle">Shelter Walk Tracker</p>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+  </div>
+
+  <!-- Step 1: Waiting for fob -->
+<div id="step1">
+  <div class="nfc-icon">🔑</div>
+  <p class="step-label">Tap your volunteer fob to the phone</p>
+  <!-- Manual fallback (hidden on real NFC devices) -->
+  <div id="manual-mode" class="hidden">
+    <input class="uid-input" id="fob-input" type="text"
+      placeholder="FOB UID (press Enter)" autocomplete="off" />
+  </div>
+</div>
+
+<!-- Step 2: Waiting for cage tag -->
+<div id="step2" class="hidden">
+  <div id="volunteer-badge" class="volunteer-badge"></div>
+  <div class="nfc-icon">🏷️</div>
+  <p class="step-label">Tap the cage tag to the phone</p>
+  <!-- Manual fallback (hidden on real NFC devices) -->
+  <div id="manual-mode-cage" class="hidden">
+    <input class="uid-input" id="tag-input" type="text"
+      placeholder="Cage UID (press Enter)" autocomplete="off" />
+  </div>
+  <button class="btn btn-secondary" onclick="resetFlow()">← Change Volunteer</button>
+</div>
+
+
+  <!-- Status -->
+  <div class="status-box status-idle" id="status">Ready</div>
+</div>
+
+<script>
+ const API = "http://10.100.1.12:8000/api";
+let currentFob = null;
+let scanning = false;
+let mode = "fob"; // "fob" or "cage"
+let reader = null;
+
+function setStatus(message, type = "idle") {
+  const el = document.getElementById("status");
+  el.textContent = message;
+  el.className = `status-box status-${type}`;
+}
+
+function showStep(step) {
+  document.getElementById("step1").classList.toggle("hidden", step !== 1);
+  document.getElementById("step2").classList.toggle("hidden", step !== 2);
+  document.getElementById("dot1").className = "step-dot" + (step === 1 ? " active" : " done");
+  document.getElementById("dot2").className = "step-dot" + (step === 2 ? " active" : "");
+}
+
+function resetFlow() {
+  currentFob = null;
+  mode = "fob";
+  setStatus("Ready — tap your volunteer fob", "idle");
+  showStep(1);
+}
+
+async function startNFC() {
+  // Check if Web NFC is supported
+  if (!("NDEFReader" in window)) {
+    // Fall back to manual input mode
+    enableManualMode();
+    return;
+  }
+
+  try {
+    reader = new NDEFReader();
+    await reader.scan();
+    scanning = true;
+    setStatus("Ready — tap your volunteer fob", "idle");
+
+    reader.onreadingerror = () => {
+      setStatus("Could not read tag — try again", "error");
+    };
+
+    reader.onreading = ({ serialNumber }) => {
+      const uid = serialNumber.replace(/:/g, "").toUpperCase();
+      handleScan(uid);
+    };
+
+  } catch (err) {
+    // Permission denied or other error — fall back to manual
+    enableManualMode();
+  }
+}
+
+function handleScan(uid) {
+  if (mode === "fob") {
+    currentFob = uid;
+    document.getElementById("volunteer-badge").textContent = `🔑 Fob: ${uid}`;
+    setStatus("Fob accepted — now tap a cage tag", "success");
+    showStep(2);
+    mode = "cage";
+  } else {
+    submitScan(currentFob, uid);
+    mode = "fob";
+    currentFob = null;
+  }
+}
+
+async function submitScan(fobUid, tagUid) {
+  setStatus("Submitting...", "loading");
+
+  try {
+    const response = await fetch(`${API}/walks/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fob_uid: fobUid, tag_uid: tagUid })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setStatus(`Error: ${data.detail}`, "error");
+      setTimeout(() => {
+        setStatus("Tap your volunteer fob", "idle");
+        showStep(1);
+        mode = "fob";
+      }, 3000);
+      return;
+    }
+
+    if (data.action === "checked_out") {
+      setStatus(`✅ ${data.dog} checked OUT\nwith ${data.volunteer}`, "success");
+    } else {
+      setStatus(`🏠 ${data.dog} checked IN\nby ${data.volunteer} (${data.duration_minutes} min)`, "success");
+    }
+
+    // After 3 seconds, go back to step 2 so volunteer can scan another dog
+    // without re-tapping their fob
+    setTimeout(() => {
+      setStatus("Tap next cage tag, or tap fob to switch volunteer", "idle");
+      showStep(2);
+      mode = "cage";
+    }, 3000);
+
+  } catch (err) {
+    setStatus("Connection error — is the server running?", "error");
+    setTimeout(resetFlow, 3000);
+  }
+}
+
+// Manual fallback mode for desktop testing
+function enableManualMode() {
+  document.getElementById("manual-mode").classList.remove("hidden");
+  setStatus("NFC not available — using manual mode", "idle");
+
+  document.getElementById("fob-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const fob = document.getElementById("fob-input").value.trim().toUpperCase();
+      if (fob) {
+        handleScan(fob);
+        document.getElementById("fob-input").value = "";
+      }
+    }
+  });
+
+  document.getElementById("tag-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const tag = document.getElementById("tag-input").value.trim().toUpperCase();
+      if (tag) {
+        handleScan(tag);
+        document.getElementById("tag-input").value = "";
+      }
+    }
+  });
+}
+
+// Start NFC on load
+startNFC();
+</script>
+</body>
+</html>
