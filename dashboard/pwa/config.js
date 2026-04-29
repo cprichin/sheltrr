@@ -1,3 +1,3 @@
 const CONFIG = {
-  API: "http://10.100.1.145:8000/api"
+  API: `http://${window.location.hostname}:8000/api`
 };

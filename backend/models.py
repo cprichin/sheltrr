@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -18,6 +18,7 @@ class Dog(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     breed = Column(String(100), nullable=True)
+    active = Column(Boolean, default=True)
     walks = relationship("Walk", back_populates="dog")
 
 class Volunteer(Base):

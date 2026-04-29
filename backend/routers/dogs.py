@@ -21,7 +21,7 @@ class DogResponse(BaseModel):
 
 @router.get("/", response_model=list[DogResponse])
 def get_dogs(db: Session = Depends(get_db)):
-    return db.query(Dog).all()
+    return db.query(Dog).filter(Dog.active == True).all()
 
 @router.post("/", response_model=DogResponse)
 def create_dog(dog: DogCreate, db: Session = Depends(get_db)):
@@ -33,9 +33,17 @@ def create_dog(dog: DogCreate, db: Session = Depends(get_db)):
 
 @router.delete("/{dog_id}")
 def delete_dog(dog_id: int, db: Session = Depends(get_db)):
+    from models import Cage
     dog = db.query(Dog).filter(Dog.id == dog_id).first()
     if not dog:
         raise HTTPException(status_code=404, detail="Dog not found")
-    db.delete(dog)
+    
+    # Unassign from cage
+    cage = db.query(Cage).filter(Cage.current_dog_id == dog_id).first()
+    if cage:
+        cage.current_dog_id = None
+    
+    # Mark as inactive instead of deleting
+    dog.active = False
     db.commit()
-    return {"message": f"{dog.name} removed"}
+    return {"message": f"{dog.name} removed from active dogs"}
