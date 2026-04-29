@@ -23,15 +23,22 @@ class WalkResponse(BaseModel):
 
 @router.post("/scan")
 def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
+    from models import Cage
+
     volunteer = db.query(Volunteer).filter(
         Volunteer.nfc_fob_uid == event.fob_uid
     ).first()
     if not volunteer:
         raise HTTPException(status_code=404, detail="Volunteer fob not recognized")
 
-    dog = db.query(Dog).filter(Dog.nfc_tag_uid == event.tag_uid).first()
-    if not dog:
+    cage = db.query(Cage).filter(Cage.nfc_tag_uid == event.tag_uid).first()
+    if not cage:
         raise HTTPException(status_code=404, detail="Cage tag not recognized")
+
+    if not cage.current_dog_id:
+        raise HTTPException(status_code=404, detail=f"No dog assigned to cage {cage.cage_number}")
+
+    dog = cage.current_dog
 
     active_walk = db.query(Walk).filter(
         Walk.dog_id == dog.id,
@@ -49,12 +56,14 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
             "action": "checked_in",
             "dog": dog.name,
             "volunteer": volunteer.name,
+            "cage": cage.cage_number,
             "duration_minutes": active_walk.duration_minutes
         }
     else:
         walk = Walk(
             dog_id=dog.id,
             volunteer_id=volunteer.id,
+            cage_id=cage.id,
             start_time=datetime.now(),
             status="active"
         )
@@ -63,7 +72,8 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
         return {
             "action": "checked_out",
             "dog": dog.name,
-            "volunteer": volunteer.name
+            "volunteer": volunteer.name,
+            "cage": cage.cage_number
         }
 
 @router.get("/active")
@@ -97,15 +107,29 @@ def get_walk_history(
         "duration_minutes": w.duration_minutes
     } for w in walks]
 
-
 @router.get("/status")
 def get_dog_status(db: Session = Depends(get_db)):
-    from datetime import date
-    dogs = db.query(Dog).all()
+    from models import Cage
+    cages = db.query(Cage).all()
     result = []
 
-    for dog in dogs:
-        # Check if currently out
+    for cage in cages:
+        if not cage.current_dog_id:
+            result.append({
+                "id": None,
+                "name": "Empty",
+                "breed": None,
+                "cage_number": cage.cage_number,
+                "location": cage.location,
+                "status": "empty",
+                "volunteer_name": None,
+                "start_time": None,
+                "duration_minutes": None
+            })
+            continue
+
+        dog = cage.current_dog
+
         active = db.query(Walk).filter(
             Walk.dog_id == dog.id,
             Walk.status == "active"
@@ -116,8 +140,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "id": dog.id,
                 "name": dog.name,
                 "breed": dog.breed,
-                "cage_number": dog.cage_number,
-                "location": dog.location,
+                "cage_number": cage.cage_number,
+                "location": cage.location,
                 "status": "out",
                 "volunteer_name": active.volunteer.name,
                 "start_time": active.start_time,
@@ -125,7 +149,6 @@ def get_dog_status(db: Session = Depends(get_db)):
             })
             continue
 
-        # Check if walked today
         today_walk = db.query(Walk).filter(
             Walk.dog_id == dog.id,
             Walk.status == "completed",
@@ -137,8 +160,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "id": dog.id,
                 "name": dog.name,
                 "breed": dog.breed,
-                "cage_number": dog.cage_number,
-                "location": dog.location,
+                "cage_number": cage.cage_number,
+                "location": cage.location,
                 "status": "walked",
                 "volunteer_name": today_walk.volunteer.name,
                 "start_time": today_walk.start_time,
@@ -149,8 +172,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "id": dog.id,
                 "name": dog.name,
                 "breed": dog.breed,
-                "cage_number": dog.cage_number,
-                "location": dog.location,
+                "cage_number": cage.cage_number,
+                "location": cage.location,
                 "status": "not_walked",
                 "volunteer_name": None,
                 "start_time": None,
@@ -164,9 +187,7 @@ def get_daily_summary(
     date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    from datetime import date as date_type
-    
-    # Default to today if no date provided
+    from models import Cage
     if date:
         target_date = datetime.strptime(date, "%Y-%m-%d").date()
     else:
@@ -175,10 +196,14 @@ def get_daily_summary(
     start = datetime.combine(target_date, datetime.min.time())
     end = datetime.combine(target_date, datetime.max.time())
 
-    dogs = db.query(Dog).all()
+    cages = db.query(Cage).all()
     summary = []
 
-    for dog in dogs:
+    for cage in cages:
+        if not cage.current_dog_id:
+            continue
+
+        dog = cage.current_dog
         walks = db.query(Walk).filter(
             Walk.dog_id == dog.id,
             Walk.status == "completed",
@@ -190,8 +215,8 @@ def get_daily_summary(
             "dog_id": dog.id,
             "dog_name": dog.name,
             "breed": dog.breed,
-            "cage_number": dog.cage_number,
-            "location": dog.location,
+            "cage_number": cage.cage_number,
+            "location": cage.location,
             "walk_count": len(walks),
             "total_minutes": sum(w.duration_minutes or 0 for w in walks),
             "volunteers": list(set(w.volunteer.name for w in walks)),

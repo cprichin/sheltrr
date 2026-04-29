@@ -10,17 +10,11 @@ router = APIRouter()
 class DogCreate(BaseModel):
     name: str
     breed: Optional[str] = None
-    cage_number: Optional[str] = None
-    nfc_tag_uid: str
-    location: Optional[str] = "indoor"
 
 class DogResponse(BaseModel):
     id: int
     name: str
     breed: Optional[str]
-    cage_number: Optional[str]
-    nfc_tag_uid: str
-    location: Optional[str]
 
     class Config:
         from_attributes = True
@@ -31,9 +25,6 @@ def get_dogs(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=DogResponse)
 def create_dog(dog: DogCreate, db: Session = Depends(get_db)):
-    existing = db.query(Dog).filter(Dog.nfc_tag_uid == dog.nfc_tag_uid).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="NFC tag already registered")
     new_dog = Dog(**dog.model_dump())
     db.add(new_dog)
     db.commit()

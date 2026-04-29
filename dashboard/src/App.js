@@ -5,9 +5,10 @@ import ManageDogs from "./components/ManageDogs";
 import ManageVolunteers from "./components/ManageVolunteers";
 import DogStatus from "./components/DogStatus";
 import DailySummary from "./components/DailySummary";
+import ManageCages from "./components/ManageCages";
 import "./App.css";
 
-const TABS = ["Status Board", "Active Walks", "History", "Dogs", "Volunteers", "Summary"];
+const TABS = ["Status Board", "Active Walks", "History", "Dogs", "Cages", "Volunteers", "Summary"];
 
 export default function App() {
   const [tab, setTab] = useState("Status Board");
@@ -38,6 +39,7 @@ export default function App() {
         {tab === "History" && <WalkHistory />}
         {tab === "Dogs" && <ManageDogs />}
         {tab === "Volunteers" && <ManageVolunteers />}
+        {tab === "Cages" && <ManageCages />}
         {tab === "Summary" && <DailySummary />}
       </main>
     </div>
