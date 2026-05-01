@@ -30,6 +30,15 @@ sudo chmod +x /usr/local/bin/docker-compose
 # Install rclone
 echo "Installing rclone..."
 curl https://rclone.org/install.sh | sudo bash
+# Install Tailscale (optional)
+echo ""
+read -p "Install Tailscale for remote access? (y/n): " INSTALL_TS
+if [ "$INSTALL_TS" = "y" ]; then
+  echo "Installing Tailscale..."
+  curl -fsSL https://tailscale.com/install.sh | sh
+  echo ""
+  echo "Run 'sudo tailscale up' after setup to authenticate."
+fi
 
 # Clone repo
 echo "Cloning Sheltrr repo..."
