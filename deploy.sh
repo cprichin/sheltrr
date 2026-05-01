@@ -78,6 +78,13 @@ EOF
 # PWA config uses dynamic hostname - no need to hardcode IP
 echo "PWA config uses dynamic hostname - no changes needed"
 
+# ── SUDOERS RULE FOR TAILSCALE API CONTROL ────────────────────────────────────
+echo "Configuring sudoers for Tailscale API control..."
+echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/tailscale" | sudo tee /etc/sudoers.d/sheltrr-tailscale
+sudo chmod 440 /etc/sudoers.d/sheltrr-tailscale
+echo "Sudoers rule added"
+
+
 # ── CONFIGURE RCLONE FOR GOOGLE DRIVE ─────────────────────────────────────────
 echo ""
 echo "================================================"
