@@ -23,7 +23,12 @@ sudo apt update && sudo apt upgrade -y
 
 # ── BASE DEPENDENCIES ─────────────────────────────────────────────────────────
 echo "[2/9] Installing base dependencies..."
-sudo apt install -y git curl unzip python3 python3-pip python3-venv dos2unix ca-certificates gnupg
+sudo apt install -y git curl unzip python3 python3-pip python3-venv dos2unix ca-certificates gnupg openssh-server
+
+# Enable SSH
+sudo systemctl enable ssh
+sudo systemctl start ssh
+echo "SSH server enabled"
 
 # ── NODE.JS 24 LTS ────────────────────────────────────────────────────────────
 echo "[3/9] Installing Node.js 24 LTS..."
@@ -58,7 +63,7 @@ echo "Tailscale connected. IP: $TAILSCALE_IP"
 
 # ── CLONE REPO ────────────────────────────────────────────────────────────────
 echo "[8/9] Cloning Sheltrr repository..."
-git clone https://github.com/YOUR_USERNAME/sheltrr.git /opt/sheltrr
+git clone https://github.com/cprichin/sheltrr.git /opt/sheltrr
 sudo chown -R $USER /opt/sheltrr
 cd /opt/sheltrr
 
@@ -70,19 +75,15 @@ cat > dashboard/.env.production << EOF
 REACT_APP_API_URL=http://${SERVER_IP}:8000/api
 EOF
 
-# Update PWA config
-cat > pwa/config.js << EOF
-const CONFIG = {
-  API: "http://${SERVER_IP}:8000/api"
-};
-EOF
+# PWA config uses dynamic hostname - no need to hardcode IP
+echo "PWA config uses dynamic hostname - no changes needed"
 
 # ── CONFIGURE RCLONE FOR GOOGLE DRIVE ─────────────────────────────────────────
 echo ""
 echo "================================================"
 echo "   Google Drive Setup"
-echo "   You will be asked to authorize rclone with"
-echo "   the shelter's Google account."
+echo "   Authorize rclone with the shelter's Google"
+echo "   account when prompted."
 echo "================================================"
 echo ""
 rclone config
