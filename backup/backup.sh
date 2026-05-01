@@ -5,6 +5,7 @@ FILENAME="sheltrr_backup_${TIMESTAMP}.sql"
 BACKUP_PATH="/tmp/${FILENAME}"
 DRIVE_FOLDER="Sheltrr Backups"
 RETENTION_DAYS=7
+RCLONE_CONFIG="/tmp/rclone.conf"
 
 echo "Starting backup at ${TIMESTAMP}"
 
@@ -23,7 +24,7 @@ fi
 echo "Database dumped successfully"
 
 # Upload to Google Drive
-rclone copy $BACKUP_PATH "gdrive:${DRIVE_FOLDER}/" --config /app/rclone.conf
+rclone copy $BACKUP_PATH "gdrive:${DRIVE_FOLDER}/" --config $RCLONE_CONFIG
 
 if [ $? -ne 0 ]; then
   echo "Upload to Google Drive failed"
@@ -37,7 +38,7 @@ rm $BACKUP_PATH
 
 # Delete backups older than 7 days from Drive
 rclone delete "gdrive:${DRIVE_FOLDER}/" \
-  --config /app/rclone.conf \
+  --config $RCLONE_CONFIG \
   --min-age ${RETENTION_DAYS}d
 
 echo "Cleaned up backups older than ${RETENTION_DAYS} days"

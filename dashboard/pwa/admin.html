@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheltrr Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    /* LOGIN */
+    .login-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .login-card h1 { color: #1F4E79; font-size: 1.8rem; margin-bottom: 6px; }
+    .login-card .sub { color: #888; font-size: 0.9rem; margin-bottom: 28px; }
+
+    .login-input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .login-input:focus { outline: none; border-color: #1F4E79; }
+
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: #1F4E79;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-btn:hover { background: #174069; }
+    .login-error { color: #c62828; font-size: 0.85rem; margin-top: 10px; }
+
+    /* ADMIN */
+    .admin-wrap { display: none; padding: 24px; }
+
+    .header {
+      background: #1F4E79;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 { font-size: 1.4rem; }
+    .header .subtitle { font-size: 0.85rem; opacity: 0.7; }
+
+    .header-btns { display: flex; gap: 8px; }
+
+    .header-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .header-btn:hover { background: rgba(255,255,255,0.25); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    .ts-status { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+    .ts-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .ts-dot.on { background: #4CAF50; box-shadow: 0 0 6px #4CAF50; }
+    .ts-dot.off { background: #ef5350; }
+    .ts-dot.loading { background: #FFA726; animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .ts-label { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; }
+    .ts-ip { font-size: 0.8rem; color: #888; font-family: monospace; margin-top: 2px; }
+
+    .toggle-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.enable { background: #e8f5e9; color: #2e7d32; }
+    .toggle-btn.enable:hover { background: #c8e6c9; }
+    .toggle-btn.disable { background: #ffebee; color: #c62828; }
+    .toggle-btn.disable:hover { background: #ffcdd2; }
+    .toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .ts-warning {
+      font-size: 0.78rem;
+      color: #e65100;
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: #fff3e0;
+      border-radius: 6px;
+    }
+
+    .container-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f4f8;
+      font-size: 0.9rem;
+    }
+
+    .container-row:last-child { border-bottom: none; }
+    .container-name { color: #1a1a1a; font-family: monospace; font-size: 0.85rem; }
+
+    .status-badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-up { background: #e8f5e9; color: #2e7d32; }
+    .status-down { background: #ffebee; color: #c62828; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .stat-box { background: #f0f4f8; border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: #1F4E79; }
+    .stat-label { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+    .backup-info { font-size: 0.85rem; color: #555; line-height: 1.5; }
+    .backup-time { font-family: monospace; font-size: 0.8rem; color: #1F4E79; margin-top: 6px; }
+
+    .action-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #1F4E79;
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .action-btn:hover { background: #174069; }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loading-overlay { text-align: center; padding: 40px; color: #888; font-size: 0.95rem; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <h1>🐾 Sheltrr</h1>
+    <p class="sub">Admin Access</p>
+    <input class="login-input" type="password" id="password-input" placeholder="Enter admin password" />
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div class="admin-wrap" id="admin-wrap">
+  <div class="header">
+    <div>
+      <h1>🐾 Sheltrr Admin</h1>
+      <div class="subtitle">System Management</div>
+    </div>
+    <div class="header-btns">
+      <button class="header-btn" onclick="loadStatus()">↻ Refresh</button>
+      <button class="header-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div id="loading" class="loading-overlay">Loading system status...</div>
+
+  <div id="content" style="display:none">
+    <div class="grid">
+
+      <!-- Tailscale -->
+      <div class="card">
+        <h2>Remote Access (Tailscale)</h2>
+        <div class="ts-status">
+          <div class="ts-dot" id="ts-dot"></div>
+          <div>
+            <div class="ts-label" id="ts-label">Checking...</div>
+            <div class="ts-ip" id="ts-ip"></div>
+          </div>
+        </div>
+        <button class="toggle-btn" id="ts-btn" onclick="toggleTailscale()">...</button>
+        <div class="ts-warning" id="ts-warning" style="display:none">
+          ⚠️ Disabling remote access means FMC Technologies cannot connect remotely until you re-enable it.
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <h2>Quick Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-value" id="stat-dogs">—</div>
+            <div class="stat-label">Active Dogs</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-volunteers">—</div>
+            <div class="stat-label">Volunteers</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-walks">—</div>
+            <div class="stat-label">Total Walks</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-active">—</div>
+            <div class="stat-label">Currently Out</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Containers -->
+      <div class="card">
+        <h2>Container Status</h2>
+        <div id="containers"></div>
+      </div>
+
+      <!-- Backup -->
+      <div class="card">
+        <h2>Backup</h2>
+        <div class="backup-info">
+          Backups run automatically every night at 2:00 AM and upload to your Google Drive.
+        </div>
+        <div class="backup-time" id="last-backup"></div>
+        <button class="action-btn" id="backup-btn" onclick="runBackup()">
+          Run Backup Now
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = `http://${window.location.hostname}:8000/api`;
+  let tsRunning = false;
+  let authToken = null;
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  function getToken() {
+    return sessionStorage.getItem("admin_token");
+  }
+
+  function saveToken(token) {
+    sessionStorage.setItem("admin_token", token);
+    authToken = token;
+  }
+
+  function logout() {
+    sessionStorage.removeItem("admin_token");
+    authToken = null;
+    document.getElementById("admin-wrap").style.display = "none";
+    document.getElementById("login-wrap").style.display = "flex";
+    document.getElementById("password-input").value = "";
+    document.getElementById("login-error").textContent = "";
+  }
+
+  async function doLogin() {
+    const password = document.getElementById("password-input").value;
+    const errorEl = document.getElementById("login-error");
+    errorEl.textContent = "";
+
+    try {
+      const res = await fetch(`${API}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+
+      if (!res.ok) {
+        errorEl.textContent = "Incorrect password. Please try again.";
+        return;
+      }
+
+      const data = await res.json();
+      saveToken(data.token);
+      document.getElementById("login-wrap").style.display = "none";
+      document.getElementById("admin-wrap").style.display = "block";
+      loadStatus();
+    } catch {
+      errorEl.textContent = "Could not connect to server.";
+    }
+  }
+
+  // Allow Enter key on password field
+  document.getElementById("password-input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") doLogin();
+  });
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${getToken()}`
+    };
+  }
+
+  function containerStatus(status) {
+    const up = status.toLowerCase().includes("up");
+    return `<span class="status-badge ${up ? 'status-up' : 'status-down'}">${up ? 'Up' : 'Down'}</span>`;
+  }
+
+  // ── LOAD STATUS ───────────────────────────────────────────────────────────
+  async function loadStatus() {
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("content").style.display = "none";
+
+    try {
+      const res = await fetch(`${API}/admin/status`, {
+        headers: authHeaders()
+      });
+
+      if (res.status === 401) { logout(); return; }
+
+      const data = await res.json();
+
+      // Tailscale
+      tsRunning = data.tailscale.running;
+      const dot = document.getElementById("ts-dot");
+      const label = document.getElementById("ts-label");
+      const ip = document.getElementById("ts-ip");
+      const btn = document.getElementById("ts-btn");
+      const warn = document.getElementById("ts-warning");
+
+      dot.className = `ts-dot ${tsRunning ? 'on' : 'off'}`;
+      label.textContent = tsRunning ? "Connected" : "Disconnected";
+      ip.textContent = tsRunning && data.tailscale.ip ? `IP: ${data.tailscale.ip}` : "";
+      btn.textContent = tsRunning ? "Disable Remote Access" : "Enable Remote Access";
+      btn.className = `toggle-btn ${tsRunning ? 'disable' : 'enable'}`;
+      warn.style.display = tsRunning ? "block" : "none";
+
+      // Stats
+      document.getElementById("stat-dogs").textContent = data.stats.total_dogs;
+      document.getElementById("stat-volunteers").textContent = data.stats.total_volunteers;
+      document.getElementById("stat-walks").textContent = data.stats.total_walks;
+      document.getElementById("stat-active").textContent = data.stats.active_walks;
+
+      // Containers
+      const containerHTML = Object.entries(data.containers).map(([name, status]) =>
+        `<div class="container-row">
+          <span class="container-name">${name}</span>
+          ${containerStatus(status)}
+        </div>`
+      ).join("");
+      document.getElementById("containers").innerHTML = containerHTML;
+
+      // Backup
+      document.getElementById("last-backup").textContent = data.last_backup;
+
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("content").style.display = "block";
+
+    } catch {
+      document.getElementById("loading").textContent = "Could not connect to server.";
+    }
+  }
+
+  // ── TAILSCALE TOGGLE ──────────────────────────────────────────────────────
+  async function toggleTailscale() {
+    const btn = document.getElementById("ts-btn");
+    btn.disabled = true;
+    btn.textContent = "Please wait...";
+    document.getElementById("ts-dot").className = "ts-dot loading";
+
+    const endpoint = tsRunning ? "disable" : "enable";
+    try {
+      const res = await fetch(`${API}/admin/tailscale/${endpoint}`, {
+        method: "POST",
+        headers: authHeaders()
+      });
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      showToast(data.message || (tsRunning ? "Tailscale disabled" : "Tailscale enabled"));
+      setTimeout(loadStatus, 2000);
+    } catch {
+      showToast("Error — could not toggle Tailscale");
+      btn.disabled = false;
+      await loadStatus();
+    }
+  }
+
+  // ── RUN BACKUP ────────────────────────────────────────────────────────────
+  async function runBackup() {
+    const btn = document.getElementById("backup-btn");
+    btn.disabled = true;
+    btn.textContent = "Running backup...";
+
+    try {
+      const res = await fetch(`${API}/admin/backup`, {
+        method: "POST",
+        headers: authHeaders()
+      });
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      showToast(data.success ? "Backup completed successfully" : "Backup failed — check logs");
+    } catch {
+      showToast("Error running backup");
+    }
+
+    btn.textContent = "Run Backup Now";
+    btn.disabled = false;
+    loadStatus();
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  const existingToken = getToken();
+  if (existingToken) {
+    authToken = existingToken;
+    document.getElementById("login-wrap").style.display = "none";
+    document.getElementById("admin-wrap").style.display = "block";
+    loadStatus();
+  }
+
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    if (getToken()) loadStatus();
+  }, 30000);
+</script>
+</body>
+</html>

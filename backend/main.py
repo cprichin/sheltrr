@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import walks, dogs, volunteers, cages
+from routers import walks, dogs, volunteers, cages, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(dogs.router, prefix="/api/dogs", tags=["Dogs"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(volunteers.router, prefix="/api/volunteers", tags=["Volunteers"])
 app.include_router(walks.router, prefix="/api/walks", tags=["Walks"])
 app.include_router(cages.router, prefix="/api/cages", tags=["Cages"])

@@ -99,6 +99,12 @@ rclone config
 mkdir -p /opt/sheltrr/backup
 cp ~/.config/rclone/rclone.conf /opt/sheltrr/backup/rclone.conf
 
+# Verify Tailscale socket exists
+if [ ! -S /var/run/tailscale/tailscaled.sock ]; then
+  echo "ERROR: Tailscale socket not found. Ensure Tailscale is running before continuing."
+  exit 1
+fi
+
 # ── BUILD AND START ───────────────────────────────────────────────────────────
 echo "[9/9] Building and starting Docker containers..."
 
