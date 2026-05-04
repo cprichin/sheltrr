@@ -61,6 +61,12 @@ sudo tailscale up --authkey="$TAILSCALE_KEY" --hostname="sheltrr-yonkers"
 TAILSCALE_IP=$(tailscale ip -4)
 echo "Tailscale connected. IP: $TAILSCALE_IP"
 
+# ── SUDOERS RULE FOR TAILSCALE API CONTROL ────────────────────────────────────
+echo "Configuring sudoers for Tailscale API control..."
+echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/tailscale" | sudo tee /etc/sudoers.d/sheltrr-tailscale
+sudo chmod 440 /etc/sudoers.d/sheltrr-tailscale
+echo "Sudoers rule added"
+
 # ── CLONE REPO ────────────────────────────────────────────────────────────────
 echo "[8/9] Cloning Sheltrr repository..."
 git clone https://github.com/cprichin/sheltrr.git /opt/sheltrr
@@ -75,15 +81,15 @@ cat > dashboard/.env.production << EOF
 REACT_APP_API_URL=http://${SERVER_IP}:8000/api
 EOF
 
-# PWA config uses dynamic hostname - no need to hardcode IP
+# PWA uses dynamic hostname - no changes needed
 echo "PWA config uses dynamic hostname - no changes needed"
 
-# ── SUDOERS RULE FOR TAILSCALE API CONTROL ────────────────────────────────────
-echo "Configuring sudoers for Tailscale API control..."
-echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/tailscale" | sudo tee /etc/sudoers.d/sheltrr-tailscale
-sudo chmod 440 /etc/sudoers.d/sheltrr-tailscale
-echo "Sudoers rule added"
-
+# ── WRITE ENV FILE ────────────────────────────────────────────────────────────
+echo "Writing environment config..."
+cat > /opt/sheltrr/.env << EOF
+ADMIN_PASSWORD=Sheltrr2026
+EOF
+echo "Environment config written"
 
 # ── CONFIGURE RCLONE FOR GOOGLE DRIVE ─────────────────────────────────────────
 echo ""
@@ -99,11 +105,13 @@ rclone config
 mkdir -p /opt/sheltrr/backup
 cp ~/.config/rclone/rclone.conf /opt/sheltrr/backup/rclone.conf
 
-# Verify Tailscale socket exists
+# ── VERIFY TAILSCALE SOCKET ───────────────────────────────────────────────────
+echo "Verifying Tailscale socket..."
 if [ ! -S /var/run/tailscale/tailscaled.sock ]; then
   echo "ERROR: Tailscale socket not found. Ensure Tailscale is running before continuing."
   exit 1
 fi
+echo "Tailscale socket found"
 
 # ── BUILD AND START ───────────────────────────────────────────────────────────
 echo "[9/9] Building and starting Docker containers..."
@@ -114,7 +122,7 @@ cd /opt/sheltrr
 docker-compose up -d --build
 DOCKERCMD
 
-# ── VERIFY ────────────────────────────────────────────────────────────────────
+# ── VERIFY CONTAINERS ─────────────────────────────────────────────────────────
 echo ""
 echo "Verifying containers..."
 docker ps
@@ -126,7 +134,7 @@ docker exec sheltrr-backup /app/backup.sh
 
 # ── AUTO-START ON BOOT ────────────────────────────────────────────────────────
 echo "Configuring auto-start on boot..."
-cat > /etc/systemd/system/sheltrr.service << EOF
+sudo tee /etc/systemd/system/sheltrr.service > /dev/null << EOF
 [Unit]
 Description=Sheltrr Docker Compose
 Requires=docker.service
@@ -148,6 +156,7 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable sheltrr.service
+echo "Auto-start on boot configured"
 
 # ── DONE ──────────────────────────────────────────────────────────────────────
 echo ""
@@ -160,11 +169,13 @@ echo "API:           http://${SERVER_IP}:8000"
 echo "API Docs:      http://${SERVER_IP}:8000/docs"
 echo "Scanner PWA:   http://${SERVER_IP}/pwa/index.html"
 echo "Setup Page:    http://${SERVER_IP}/pwa/setup.html"
+echo "Admin Panel:   http://${SERVER_IP}/pwa/admin.html"
 echo "Tailscale IP:  ${TAILSCALE_IP}"
 echo ""
 echo "Remote access: ssh $USER@${TAILSCALE_IP}"
 echo "Push updates:  ssh $USER@${TAILSCALE_IP} 'cd /opt/sheltrr && git pull && docker-compose up -d --build'"
 echo ""
+echo "Admin panel password: Sheltrr2026"
 echo "Backup runs nightly at 2:00 AM."
 echo "To run manually: docker exec sheltrr-backup /app/backup.sh"
 echo ""
