@@ -74,12 +74,6 @@ sudo chown -R $USER /opt/sheltrr
 cd /opt/sheltrr
 
 # ── CONFIGURE SERVER IP ───────────────────────────────────────────────────────
-echo "Configuring server IP: $SERVER_IP"
-
-# Update dashboard env
-cat > dashboard/.env.production << EOF
-REACT_APP_API_URL=http://${SERVER_IP}:8000/api
-EOF
 
 # PWA uses dynamic hostname - no changes needed
 echo "PWA config uses dynamic hostname - no changes needed"
