@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
+from dotenv import load_dotenv
 import subprocess
 import json
 import os
 import hashlib
-
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=env_path)
 router = APIRouter()
 
 def get_admin_password():
