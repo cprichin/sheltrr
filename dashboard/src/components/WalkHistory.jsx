@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-
-const API = "http://localhost:8000/api";
+import API from "../api";
 
 export default function WalkHistory() {
   const [walks, setWalks] = useState([]);
@@ -26,6 +25,7 @@ export default function WalkHistory() {
             <tr>
               <th>Dog</th>
               <th>Volunteer</th>
+              <th>Location</th>
               <th>Date</th>
               <th>Start</th>
               <th>End</th>
@@ -37,6 +37,11 @@ export default function WalkHistory() {
               <tr key={w.id}>
                 <td><strong>{w.dog_name}</strong></td>
                 <td>{w.volunteer_name}</td>
+                <td>
+                  <span style={{ background: "#e3f2fd", color: "#1565c0", padding: "3px 10px", borderRadius: 20, fontSize: "0.8rem", fontWeight: 600 }}>
+                    {w.location || "—"}
+                  </span>
+                </td>
                 <td>{new Date(w.start_time).toLocaleDateString()}</td>
                 <td>{new Date(w.start_time).toLocaleTimeString()}</td>
                 <td>{w.end_time ? new Date(w.end_time).toLocaleTimeString() : "—"}</td>

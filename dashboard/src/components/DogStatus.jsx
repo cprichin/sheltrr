@@ -6,6 +6,7 @@ const STATUS_CONFIG = {
   out:        { label: "Out Now",       bg: "#fff3e0", color: "#e65100", dot: "#e65100" },
   walked:     { label: "Walked Today",  bg: "#e8f5e9", color: "#2e7d32", dot: "#4caf50" },
   not_walked: { label: "Not Yet",       bg: "#ffebee", color: "#c62828", dot: "#ef5350" },
+  empty:      { label: "Empty",         bg: "#f5f5f5", color: "#aaa",    dot: "#ccc"    },
 };
 
 export default function DogStatus() {
@@ -41,7 +42,6 @@ export default function DogStatus() {
 
   return (
     <div>
-      {/* Overdue Alert Banner */}
       {overdue.length > 0 && (
         <div style={{
           background: "#c62828", color: "white", borderRadius: 12,
@@ -53,7 +53,6 @@ export default function DogStatus() {
       )}
 
       <div className="card">
-        {/* Header row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
           <h2 style={{ margin: 0 }}>🐕 Dog Status Board</h2>
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "#555" }}>
@@ -68,7 +67,6 @@ export default function DogStatus() {
           </div>
         </div>
 
-        {/* Filter tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           {[
             { key: "all",        label: `All (${counts.all})` },
@@ -88,18 +86,17 @@ export default function DogStatus() {
           ))}
         </div>
 
-        {/* Dog grid */}
         {loading ? (
           <p className="empty">Loading...</p>
         ) : filtered.length === 0 ? (
           <p className="empty">No dogs in this category</p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-            {filtered.map(dog => {
-              const cfg = STATUS_CONFIG[dog.status];
+            {filtered.map((dog, idx) => {
+              const cfg = STATUS_CONFIG[dog.status] || STATUS_CONFIG.not_walked;
               const isOverdue = dog.status === "out" && dog.duration_minutes >= overdueMinutes;
               return (
-                <div key={dog.id} style={{
+                <div key={dog.id || idx} style={{
                   background: isOverdue ? "#ffebee" : cfg.bg,
                   border: `2px solid ${isOverdue ? "#c62828" : cfg.dot}`,
                   borderRadius: 12,
@@ -129,6 +126,11 @@ export default function DogStatus() {
                   {dog.status === "out" && (
                     <div style={{ fontSize: "0.82rem", color: cfg.color, fontWeight: 600 }}>
                       {dog.volunteer_name} · {dog.duration_minutes}m
+                      {dog.walk_location && (
+                        <span style={{ marginLeft: 6, background: "#e3f2fd", color: "#1565c0", padding: "2px 8px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 600 }}>
+                          {dog.walk_location}
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -141,6 +143,12 @@ export default function DogStatus() {
                   {dog.status === "not_walked" && (
                     <div style={{ fontSize: "0.82rem", color: cfg.color, fontWeight: 600 }}>
                       Needs a walk
+                    </div>
+                  )}
+
+                  {dog.status === "empty" && (
+                    <div style={{ fontSize: "0.82rem", color: cfg.color }}>
+                      No dog assigned
                     </div>
                   )}
                 </div>

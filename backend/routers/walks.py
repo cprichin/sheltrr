@@ -8,9 +8,12 @@ from datetime import datetime
 
 router = APIRouter()
 
+
 class ScanEvent(BaseModel):
     fob_uid: str
     tag_uid: str
+    location_id: int
+
 
 class WalkResponse(BaseModel):
     id: int
@@ -21,9 +24,10 @@ class WalkResponse(BaseModel):
     duration_minutes: Optional[int]
     status: str
 
+
 @router.post("/scan")
 def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
-    from models import Cage
+    from models import Cage, Location
 
     volunteer = db.query(Volunteer).filter(
         Volunteer.nfc_fob_uid == event.fob_uid
@@ -37,6 +41,10 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
 
     if not cage.current_dog_id:
         raise HTTPException(status_code=404, detail=f"No dog assigned to cage {cage.cage_number}")
+
+    location = db.query(Location).filter(Location.id == event.location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
 
     dog = cage.current_dog
 
@@ -57,6 +65,7 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
             "dog": dog.name,
             "volunteer": volunteer.name,
             "cage": cage.cage_number,
+            "location": location.name,
             "duration_minutes": active_walk.duration_minutes
         }
     else:
@@ -64,6 +73,7 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
             dog_id=dog.id,
             volunteer_id=volunteer.id,
             cage_id=cage.id,
+            location_id=event.location_id,
             start_time=datetime.now(),
             status="active"
         )
@@ -73,8 +83,10 @@ def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
             "action": "checked_out",
             "dog": dog.name,
             "volunteer": volunteer.name,
-            "cage": cage.cage_number
+            "cage": cage.cage_number,
+            "location": location.name
         }
+
 
 @router.get("/active")
 def get_active_walks(db: Session = Depends(get_db)):
@@ -83,8 +95,10 @@ def get_active_walks(db: Session = Depends(get_db)):
         "id": w.id,
         "dog_name": w.dog.name,
         "volunteer_name": w.volunteer.name,
-        "start_time": w.start_time
+        "start_time": w.start_time,
+        "location": w.location.name if w.location else "—"
     } for w in walks]
+
 
 @router.get("/history")
 def get_walk_history(
@@ -104,8 +118,10 @@ def get_walk_history(
         "volunteer_name": w.volunteer.name,
         "start_time": w.start_time,
         "end_time": w.end_time,
-        "duration_minutes": w.duration_minutes
+        "duration_minutes": w.duration_minutes,
+        "location": w.location.name if w.location else "—"
     } for w in walks]
+
 
 @router.get("/status")
 def get_dog_status(db: Session = Depends(get_db)):
@@ -124,7 +140,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "status": "empty",
                 "volunteer_name": None,
                 "start_time": None,
-                "duration_minutes": None
+                "duration_minutes": None,
+                "walk_location": None
             })
             continue
 
@@ -145,7 +162,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "status": "out",
                 "volunteer_name": active.volunteer.name,
                 "start_time": active.start_time,
-                "duration_minutes": int((datetime.now() - active.start_time).seconds / 60)
+                "duration_minutes": int((datetime.now() - active.start_time).seconds / 60),
+                "walk_location": active.location.name if active.location else None
             })
             continue
 
@@ -165,7 +183,8 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "status": "walked",
                 "volunteer_name": today_walk.volunteer.name,
                 "start_time": today_walk.start_time,
-                "duration_minutes": today_walk.duration_minutes
+                "duration_minutes": today_walk.duration_minutes,
+                "walk_location": None
             })
         else:
             result.append({
@@ -177,10 +196,12 @@ def get_dog_status(db: Session = Depends(get_db)):
                 "status": "not_walked",
                 "volunteer_name": None,
                 "start_time": None,
-                "duration_minutes": None
+                "duration_minutes": None,
+                "walk_location": None
             })
 
     return result
+
 
 @router.get("/summary")
 def get_daily_summary(

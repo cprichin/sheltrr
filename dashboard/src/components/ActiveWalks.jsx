@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-
-const API = "http://localhost:8000/api";
+import API from "../api";
 
 export default function ActiveWalks() {
   const [walks, setWalks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-const fetchWalks = () => {
-  axios.get(`${API}/walks/active`)
-    .then(r => { setWalks(r.data); setLoading(false); })
-    .catch(() => { setWalks([]); setLoading(false); });
-};
+  const fetchWalks = () => {
+    axios.get(`${API}/walks/active`)
+      .then(r => { setWalks(r.data); setLoading(false); })
+      .catch(() => { setWalks([]); setLoading(false); });
+  };
 
   useEffect(() => {
     fetchWalks();
@@ -38,9 +37,9 @@ const fetchWalks = () => {
             <tr>
               <th>Dog</th>
               <th>Volunteer</th>
+              <th>Location</th>
               <th>Out Since</th>
               <th>Duration</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -48,9 +47,13 @@ const fetchWalks = () => {
               <tr key={w.id}>
                 <td><strong>{w.dog_name}</strong></td>
                 <td>{w.volunteer_name}</td>
+                <td>
+                  <span style={{ background: "#e3f2fd", color: "#1565c0", padding: "3px 10px", borderRadius: 20, fontSize: "0.8rem", fontWeight: 600 }}>
+                    {w.location || "—"}
+                  </span>
+                </td>
                 <td>{new Date(w.start_time).toLocaleTimeString()}</td>
                 <td>{duration(w.start_time)}</td>
-                <td><span className="badge badge-out">Out</span></td>
               </tr>
             ))}
           </tbody>

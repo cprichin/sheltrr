@@ -6,7 +6,6 @@
   <title>Sheltrr Scanner</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #f0f4f8;
@@ -16,7 +15,6 @@
       min-height: 100vh;
       padding: 20px;
     }
-
     .card {
       background: white;
       border-radius: 20px;
@@ -26,125 +24,64 @@
       max-width: 420px;
       text-align: center;
     }
-
     .logo { font-size: 2.5rem; margin-bottom: 6px; }
-
-    h1 {
-      font-size: 1.8rem;
-      color: #1F4E79;
-      margin-bottom: 4px;
-    }
-
-    .subtitle {
-      color: #888;
-      font-size: 0.9rem;
-      margin-bottom: 30px;
-    }
-
-    .step-indicator {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .step-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ddd;
-      transition: background 0.3s;
-    }
-
+    h1 { font-size: 1.8rem; color: #1F4E79; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 30px; }
+    .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+    .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: background 0.3s; }
     .step-dot.active { background: #1F4E79; }
     .step-dot.done { background: #4CAF50; }
-
-    .step-label {
-      font-size: 1rem;
-      color: #555;
-      margin-bottom: 16px;
-      min-height: 24px;
-    }
-
+    .step-label { font-size: 1rem; color: #555; margin-bottom: 16px; min-height: 24px; }
     .uid-input {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #ddd;
-      border-radius: 10px;
-      font-size: 1rem;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-      text-transform: uppercase;
+      width: 100%; padding: 14px 16px; border: 2px solid #ddd;
+      border-radius: 10px; font-size: 1rem; margin-bottom: 12px;
+      transition: border-color 0.2s; text-transform: uppercase;
     }
-
-    .uid-input:focus {
-      outline: none;
-      border-color: #1F4E79;
-    }
-
+    .uid-input:focus { outline: none; border-color: #1F4E79; }
     .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-bottom: 10px;
+      width: 100%; padding: 14px; border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; margin-bottom: 10px;
     }
-
     .btn:active { transform: scale(0.98); }
-
-    .btn-primary {
-      background: #1F4E79;
-      color: white;
-    }
-
+    .btn-primary { background: #1F4E79; color: white; }
     .btn-primary:hover { background: #174069; }
-
-    .btn-secondary {
-      background: #f0f4f8;
-      color: #555;
-    }
-
+    .btn-secondary { background: #f0f4f8; color: #555; }
     .btn-secondary:hover { background: #e2e8f0; }
-
-    .status-box {
-      margin-top: 24px;
-      padding: 16px;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 500;
-      min-height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
+    .location-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px; margin-bottom: 12px;
     }
-
+    .location-btn {
+      padding: 16px 10px; border: 2px solid #e2e8f0; border-radius: 12px;
+      background: white; font-size: 0.95rem; font-weight: 600; color: #555;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .location-btn:hover { border-color: #1F4E79; color: #1F4E79; background: #f0f6ff; }
+    .location-btn.selected { border-color: #1F4E79; background: #1F4E79; color: white; }
+    .status-box {
+      margin-top: 24px; padding: 16px; border-radius: 12px;
+      font-size: 1rem; font-weight: 500; min-height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s; white-space: pre-line;
+    }
     .status-idle { background: #f0f4f8; color: #888; }
     .status-success { background: #e8f5e9; color: #2e7d32; }
     .status-error { background: #ffebee; color: #c62828; }
     .status-loading { background: #e3f2fd; color: #1565c0; }
-
     .volunteer-badge {
-      background: #e8f5e9;
-      color: #2e7d32;
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-      display: inline-block;
+      background: #e8f5e9; color: #2e7d32; padding: 8px 14px;
+      border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 8px; display: inline-block;
     }
-
+    .location-badge {
+      background: #e3f2fd; color: #1565c0; padding: 8px 14px;
+      border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 16px; display: inline-block;
+    }
     .hidden { display: none; }
-
-    .nfc-icon {
-      font-size: 3rem;
-      margin-bottom: 12px;
-    }
+    .nfc-icon { font-size: 3rem; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -152,40 +89,38 @@
   <div class="logo">🐾</div>
   <h1>Sheltrr</h1>
   <p class="subtitle">Shelter Walk Tracker</p>
-
   <div class="step-indicator">
     <div class="step-dot active" id="dot1"></div>
     <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
   </div>
 
-  <!-- Step 1: Volunteer FOB -->
+  <!-- Step 1: FOB -->
   <div id="step1">
     <div class="nfc-icon">🔑</div>
     <p class="step-label">Tap your volunteer fob — or enter manually</p>
-    <input
-      class="uid-input"
-      id="fob-input"
-      type="text"
-      placeholder="FOB UID (e.g. TESTFOB001)"
-      autocomplete="off"
-    />
+    <input class="uid-input" id="fob-input" type="text" placeholder="FOB UID" autocomplete="off" />
     <button class="btn btn-primary" onclick="submitFob()">Confirm</button>
   </div>
 
-  <!-- Step 2: Cage Tag -->
+  <!-- Step 2: Location -->
   <div id="step2" class="hidden">
     <div id="volunteer-badge" class="volunteer-badge"></div>
+    <div class="nfc-icon">📍</div>
+    <p class="step-label">Where are you taking the dog?</p>
+    <div class="location-grid" id="location-grid"></div>
+    <button class="btn btn-secondary" onclick="resetFlow()">← Change Volunteer</button>
+  </div>
+
+  <!-- Step 3: Cage Tag -->
+  <div id="step3" class="hidden">
+    <div id="volunteer-badge2" class="volunteer-badge"></div>
+    <div id="location-badge" class="location-badge"></div>
     <div class="nfc-icon">🏷️</div>
     <p class="step-label">Tap the cage tag — or enter manually</p>
-    <input
-      class="uid-input"
-      id="tag-input"
-      type="text"
-      placeholder="Cage UID (e.g. TESTCAGE001)"
-      autocomplete="off"
-    />
+    <input class="uid-input" id="tag-input" type="text" placeholder="Cage UID" autocomplete="off" />
     <button class="btn btn-primary" onclick="submitScan()">Submit</button>
-    <button class="btn btn-secondary" onclick="resetFlow()">← Change Volunteer</button>
+    <button class="btn btn-secondary" onclick="goToStep2()">← Change Location</button>
   </div>
 
   <div class="status-box status-idle" id="status">Ready</div>
@@ -194,7 +129,25 @@
 <script>
   const API = `http://${window.location.hostname}:8000/api`;
   let currentFob = null;
+  let currentLocationId = null;
   let scanning = "fob";
+  let locations = [];
+
+  async function loadLocations() {
+    try {
+      const res = await fetch(`${API}/locations/`);
+      locations = await res.json();
+    } catch {
+      setStatus("Could not load locations — is the server running?", "error");
+    }
+  }
+
+  function renderLocationButtons() {
+    const grid = document.getElementById("location-grid");
+    grid.innerHTML = locations.map(loc =>
+      `<button class="location-btn" onclick="selectLocation(${loc.id}, '${loc.name}', event)">${loc.name}</button>`
+    ).join("");
+  }
 
   function setStatus(message, type) {
     if (!type) type = "idle";
@@ -206,68 +159,15 @@
   function showStep(step) {
     document.getElementById("step1").classList.toggle("hidden", step !== 1);
     document.getElementById("step2").classList.toggle("hidden", step !== 2);
+    document.getElementById("step3").classList.toggle("hidden", step !== 3);
     document.getElementById("dot1").className = "step-dot" + (step === 1 ? " active" : " done");
-    document.getElementById("dot2").className = "step-dot" + (step === 2 ? " active" : "");
-  }
-
-  function submitFob() {
-    var fob = document.getElementById("fob-input").value.trim().toUpperCase();
-    if (!fob) {
-      setStatus("Please enter a fob UID", "error");
-      return;
-    }
-    currentFob = fob;
-    document.getElementById("volunteer-badge").textContent = "🔑 Fob: " + fob;
-    document.getElementById("fob-input").value = "";
-    setStatus("Fob accepted — now scan or enter a cage tag", "success");
-    showStep(2);
-    scanning = "cage";
-    document.getElementById("tag-input").focus();
-  }
-
-  function submitScan() {
-    var tag = document.getElementById("tag-input").value.trim().toUpperCase();
-    if (!tag) {
-      setStatus("Please enter a cage tag UID", "error");
-      return;
-    }
-
-    setStatus("Submitting...", "loading");
-
-    fetch(API + "/walks/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fob_uid: currentFob, tag_uid: tag })
-    })
-    .then(function(response) {
-      return response.json().then(function(data) {
-        return { ok: response.ok, data: data };
-      });
-    })
-    .then(function(result) {
-      if (!result.ok) {
-        setStatus("Error: " + result.data.detail, "error");
-        return;
-      }
-      var data = result.data;
-      if (data.action === "checked_out") {
-        setStatus("✅ " + data.dog + " checked OUT with " + data.volunteer, "success");
-      } else {
-        setStatus("🏠 " + data.dog + " checked IN by " + data.volunteer + " (" + data.duration_minutes + " min)", "success");
-      }
-      document.getElementById("tag-input").value = "";
-      setTimeout(function() {
-        setStatus("Ready for next scan", "idle");
-        document.getElementById("tag-input").focus();
-      }, 3000);
-    })
-    .catch(function() {
-      setStatus("Connection error — is the server running?", "error");
-    });
+    document.getElementById("dot2").className = "step-dot" + (step === 2 ? " active" : step > 2 ? " done" : "");
+    document.getElementById("dot3").className = "step-dot" + (step === 3 ? " active" : "");
   }
 
   function resetFlow() {
     currentFob = null;
+    currentLocationId = null;
     scanning = "fob";
     document.getElementById("fob-input").value = "";
     document.getElementById("tag-input").value = "";
@@ -276,41 +176,90 @@
     document.getElementById("fob-input").focus();
   }
 
-  // NFC scanning
+  function goToStep2() {
+    currentLocationId = null;
+    document.querySelectorAll(".location-btn").forEach(b => b.classList.remove("selected"));
+    scanning = "location";
+    showStep(2);
+    setStatus("Select a location", "idle");
+  }
+
+  function submitFob() {
+    var fob = document.getElementById("fob-input").value.trim().toUpperCase();
+    if (!fob) { setStatus("Please enter a fob UID", "error"); return; }
+    currentFob = fob;
+    document.getElementById("volunteer-badge").textContent = "🔑 " + fob;
+    document.getElementById("volunteer-badge2").textContent = "🔑 " + fob;
+    document.getElementById("fob-input").value = "";
+    renderLocationButtons();
+    setStatus("Fob accepted — select a location", "success");
+    showStep(2);
+    scanning = "location";
+  }
+
+  function selectLocation(id, name, evt) {
+    currentLocationId = id;
+    document.querySelectorAll(".location-btn").forEach(b => b.classList.remove("selected"));
+    evt.target.classList.add("selected");
+    document.getElementById("location-badge").textContent = "📍 " + name;
+    setTimeout(function() {
+      setStatus("Location set — tap the cage tag", "success");
+      showStep(3);
+      scanning = "cage";
+      document.getElementById("tag-input").focus();
+    }, 300);
+  }
+
+  function submitScan() {
+    var tag = document.getElementById("tag-input").value.trim().toUpperCase();
+    if (!tag) { setStatus("Please enter a cage tag UID", "error"); return; }
+    if (!currentLocationId) { setStatus("Please select a location first", "error"); showStep(2); return; }
+
+    setStatus("Submitting...", "loading");
+
+    fetch(API + "/walks/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fob_uid: currentFob, tag_uid: tag, location_id: currentLocationId })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(result) {
+      if (!result.ok) { setStatus("Error: " + result.data.detail, "error"); return; }
+      var d = result.data;
+      if (d.action === "checked_out") {
+        setStatus("✅ " + d.dog + " checked OUT\n" + d.location + " · " + d.volunteer, "success");
+      } else {
+        setStatus("🏠 " + d.dog + " checked IN\n" + d.volunteer + " · " + d.duration_minutes + " min", "success");
+      }
+      document.getElementById("tag-input").value = "";
+      setTimeout(function() {
+        setStatus("Ready for next scan", "idle");
+        showStep(3);
+        scanning = "cage";
+        document.getElementById("tag-input").focus();
+      }, 3000);
+    })
+    .catch(function() { setStatus("Connection error — is the server running?", "error"); });
+  }
+
   function startNFC() {
-    if (!("NDEFReader" in window)) {
-      setStatus("Manual mode — type UIDs and press the buttons", "idle");
-      return;
-    }
+    if (!("NDEFReader" in window)) { setStatus("Manual mode — type UIDs and press buttons", "idle"); return; }
     try {
       var reader = new NDEFReader();
       reader.scan().then(function() {
         reader.onreading = function(event) {
           var uid = event.serialNumber.replace(/:/g, "").toUpperCase();
-          if (scanning === "fob") {
-            document.getElementById("fob-input").value = uid;
-            submitFob();
-          } else {
-            document.getElementById("tag-input").value = uid;
-            submitScan();
-          }
+          if (scanning === "fob") { document.getElementById("fob-input").value = uid; submitFob(); }
+          else if (scanning === "cage") { document.getElementById("tag-input").value = uid; submitScan(); }
         };
       });
-    } catch(err) {
-      setStatus("Manual mode — type UIDs and press the buttons", "idle");
-    }
+    } catch(err) { setStatus("Manual mode — type UIDs and press buttons", "idle"); }
   }
 
-  // Allow Enter key to advance
-  document.getElementById("fob-input").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") submitFob();
-  });
+  document.getElementById("fob-input").addEventListener("keydown", function(e) { if (e.key === "Enter") submitFob(); });
+  document.getElementById("tag-input").addEventListener("keydown", function(e) { if (e.key === "Enter") submitScan(); });
 
-  document.getElementById("tag-input").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") submitScan();
-  });
-
-  startNFC();
+  loadLocations().then(function() { startNFC(); });
 </script>
 </body>
 </html>
