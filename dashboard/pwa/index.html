@@ -184,18 +184,36 @@
     setStatus("Select a location", "idle");
   }
 
-  function submitFob() {
-    var fob = document.getElementById("fob-input").value.trim().toUpperCase();
-    if (!fob) { setStatus("Please enter a fob UID", "error"); return; }
+async function submitFob() {
+  var fob = document.getElementById("fob-input").value.trim().toUpperCase();
+  if (!fob) { setStatus("Please enter a fob UID", "error"); return; }
+
+  // Look up volunteer name
+  try {
+    const res = await fetch(`${API}/volunteers/`);
+    const volunteers = await res.json();
+    const match = volunteers.find(v => v.nfc_fob_uid === fob);
+    if (!match) {
+      setStatus("Volunteer fob not recognized", "error");
+      return;
+    }
+    currentFob = fob;
+    const displayName = "🔑 " + match.name;
+    document.getElementById("volunteer-badge").textContent = displayName;
+    document.getElementById("volunteer-badge2").textContent = displayName;
+  } catch {
+    // Fall back to showing UID if lookup fails
     currentFob = fob;
     document.getElementById("volunteer-badge").textContent = "🔑 " + fob;
     document.getElementById("volunteer-badge2").textContent = "🔑 " + fob;
-    document.getElementById("fob-input").value = "";
-    renderLocationButtons();
-    setStatus("Fob accepted — select a location", "success");
-    showStep(2);
-    scanning = "location";
   }
+
+  document.getElementById("fob-input").value = "";
+  renderLocationButtons();
+  setStatus("Fob accepted — select a location", "success");
+  showStep(2);
+  scanning = "location";
+}
 
   function selectLocation(id, name, evt) {
     currentLocationId = id;
