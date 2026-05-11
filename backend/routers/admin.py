@@ -1,20 +1,25 @@
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
-from dotenv import load_dotenv
 import subprocess
 import json
 import os
 import hashlib
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path=env_path)
+import platform
+
 router = APIRouter()
+
+IS_WINDOWS = platform.system() == "Windows"
+TAILSCALE_SOCKET = "/var/run/tailscale/tailscaled.sock"
+
 
 def get_admin_password():
     return os.getenv("ADMIN_PASSWORD", "Sheltrr2026")
 
+
 def get_token():
     password = get_admin_password()
     return hashlib.sha256(password.encode()).hexdigest()
+
 
 def verify_token(authorization: str = None):
     if not authorization:
@@ -22,6 +27,7 @@ def verify_token(authorization: str = None):
     token = authorization.replace("Bearer ", "").strip()
     if token != get_token():
         raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 def run_cmd(cmd):
     try:
@@ -31,6 +37,14 @@ def run_cmd(cmd):
         return result.stdout.strip(), result.returncode == 0
     except Exception as e:
         return str(e), False
+
+
+def tailscale_cmd(args):
+    """Run a tailscale command using the appropriate method for the OS."""
+    if IS_WINDOWS:
+        return run_cmd(f"tailscale {args}")
+    else:
+        return run_cmd(f"tailscale --socket {TAILSCALE_SOCKET} {args}")
 
 
 class LoginRequest(BaseModel):
@@ -50,9 +64,7 @@ def get_system_status(authorization: str = Header(None)):
     verify_token(authorization)
 
     # Tailscale status
-    ts_out, ts_ok = run_cmd(
-        "tailscale --socket /var/run/tailscale/tailscaled.sock status --json 2>/dev/null || echo '{}'"
-    )
+    ts_out, ts_ok = tailscale_cmd("status --json 2>/dev/null || echo '{}'")
     try:
         ts_data = json.loads(ts_out)
         ts_running = ts_data.get("BackendState") == "Running"
@@ -116,18 +128,14 @@ def get_system_status(authorization: str = Header(None)):
 @router.post("/tailscale/enable")
 def enable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    out, ok = run_cmd(
-        "tailscale --socket /var/run/tailscale/tailscaled.sock up"
-    )
+    out, ok = tailscale_cmd("up")
     return {"success": ok, "message": out or "Tailscale enabled"}
 
 
 @router.post("/tailscale/disable")
 def disable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    out, ok = run_cmd(
-        "tailscale --socket /var/run/tailscale/tailscaled.sock down"
-    )
+    out, ok = tailscale_cmd("down")
     return {"success": ok, "message": out or "Tailscale disabled"}
 
 
