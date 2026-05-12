@@ -5,11 +5,14 @@ import json
 import os
 import hashlib
 import platform
+import urllib.request
+import urllib.error
 
 router = APIRouter()
 
 IS_WINDOWS = platform.system() == "Windows"
 TAILSCALE_SOCKET = "/var/run/tailscale/tailscaled.sock"
+HOST_AGENT_URL = "http://host.docker.internal:5555"
 
 
 def get_admin_password():
@@ -39,12 +42,50 @@ def run_cmd(cmd):
         return str(e), False
 
 
-def tailscale_cmd(args):
-    """Run a tailscale command using the appropriate method for the OS."""
+def agent_get(path):
+    """Call the Windows host agent via HTTP."""
+    try:
+        req = urllib.request.urlopen(f"{HOST_AGENT_URL}{path}", timeout=5)
+        return json.loads(req.read().decode()), True
+    except Exception as e:
+        return {"error": str(e)}, False
+
+
+def agent_post(path):
+    """POST to the Windows host agent."""
+    try:
+        req = urllib.request.Request(
+            f"{HOST_AGENT_URL}{path}",
+            data=b"",
+            method="POST"
+        )
+        res = urllib.request.urlopen(req, timeout=5)
+        return json.loads(res.read().decode()), True
+    except Exception as e:
+        return {"error": str(e)}, False
+
+
+def get_tailscale_status():
+    """Get Tailscale status — uses host agent on Windows, socket on Linux."""
     if IS_WINDOWS:
-        return run_cmd(f"tailscale {args}")
+        data, ok = agent_get("/tailscale/status")
+        if ok:
+            return data.get("running", False), data.get("ip")
+        return False, None
     else:
-        return run_cmd(f"tailscale --socket {TAILSCALE_SOCKET} {args}")
+        out, ok = run_cmd(
+            f"tailscale --socket {TAILSCALE_SOCKET} status --json 2>/dev/null || echo '{{}}'"
+        )
+        try:
+            ts_data = json.loads(out)
+            running = ts_data.get("BackendState") == "Running"
+            ip = None
+            if running and ts_data.get("Self"):
+                addrs = ts_data["Self"].get("TailscaleIPs", [])
+                ip = addrs[0] if addrs else None
+            return running, ip
+        except Exception:
+            return False, None
 
 
 class LoginRequest(BaseModel):
@@ -55,8 +96,7 @@ class LoginRequest(BaseModel):
 def login(req: LoginRequest):
     if req.password != get_admin_password():
         raise HTTPException(status_code=401, detail="Incorrect password")
-    token = get_token()
-    return {"token": token}
+    return {"token": get_token()}
 
 
 @router.get("/status")
@@ -64,17 +104,7 @@ def get_system_status(authorization: str = Header(None)):
     verify_token(authorization)
 
     # Tailscale status
-    ts_out, ts_ok = tailscale_cmd("status --json 2>/dev/null || echo '{}'")
-    try:
-        ts_data = json.loads(ts_out)
-        ts_running = ts_data.get("BackendState") == "Running"
-        ts_ip = None
-        if ts_running and ts_data.get("Self"):
-            addrs = ts_data["Self"].get("TailscaleIPs", [])
-            ts_ip = addrs[0] if addrs else None
-    except Exception:
-        ts_running = False
-        ts_ip = None
+    ts_running, ts_ip = get_tailscale_status()
 
     # Docker container status
     containers_out, _ = run_cmd(
@@ -92,7 +122,7 @@ def get_system_status(authorization: str = Header(None)):
     )
     last_backup = backup_out if backup_out else "No backup recorded yet"
 
-    # Quick stats from database
+    # Quick stats
     from database import SessionLocal
     from models import Dog, Volunteer, Walk
     db = SessionLocal()
@@ -128,15 +158,23 @@ def get_system_status(authorization: str = Header(None)):
 @router.post("/tailscale/enable")
 def enable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    out, ok = tailscale_cmd("up")
-    return {"success": ok, "message": out or "Tailscale enabled"}
+    if IS_WINDOWS:
+        data, ok = agent_post("/tailscale/enable")
+        return {"success": ok, "message": data.get("message", "Tailscale enabled")}
+    else:
+        out, ok = run_cmd(f"tailscale --socket {TAILSCALE_SOCKET} up")
+        return {"success": ok, "message": out or "Tailscale enabled"}
 
 
 @router.post("/tailscale/disable")
 def disable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    out, ok = tailscale_cmd("down")
-    return {"success": ok, "message": out or "Tailscale disabled"}
+    if IS_WINDOWS:
+        data, ok = agent_post("/tailscale/disable")
+        return {"success": ok, "message": data.get("message", "Tailscale disabled")}
+    else:
+        out, ok = run_cmd(f"tailscale --socket {TAILSCALE_SOCKET} down")
+        return {"success": ok, "message": out or "Tailscale disabled"}
 
 
 @router.post("/backup")

@@ -3,11 +3,13 @@ from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
 
+
 class Location(Base):
     __tablename__ = "locations"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
     walks = relationship("Walk", back_populates="location")
+
 
 class Cage(Base):
     __tablename__ = "cages"
@@ -19,6 +21,7 @@ class Cage(Base):
     current_dog = relationship("Dog", foreign_keys=[current_dog_id])
     walks = relationship("Walk", back_populates="cage")
 
+
 class Dog(Base):
     __tablename__ = "dogs"
     id = Column(Integer, primary_key=True)
@@ -27,12 +30,14 @@ class Dog(Base):
     active = Column(Boolean, default=True)
     walks = relationship("Walk", back_populates="dog")
 
+
 class Volunteer(Base):
     __tablename__ = "volunteers"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    nfc_fob_uid = Column(String(100), unique=True, nullable=False)
+    pin_hash = Column(String(64), nullable=True)
     walks = relationship("Walk", back_populates="volunteer")
+
 
 class Walk(Base):
     __tablename__ = "walks"

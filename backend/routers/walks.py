@@ -5,37 +5,28 @@ from models import Walk, Dog, Volunteer
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+import hashlib
 
 router = APIRouter()
 
 
 class ScanEvent(BaseModel):
-    fob_uid: str
+    pin: str
     tag_uid: str
     location_id: int
-
-
-class WalkResponse(BaseModel):
-    id: int
-    dog_name: str
-    volunteer_name: str
-    start_time: datetime
-    end_time: Optional[datetime]
-    duration_minutes: Optional[int]
-    status: str
 
 
 @router.post("/scan")
 def handle_scan(event: ScanEvent, db: Session = Depends(get_db)):
     from models import Cage, Location
 
-    volunteer = db.query(Volunteer).filter(
-        Volunteer.nfc_fob_uid == event.fob_uid
-    ).first()
+    # Look up volunteer by PIN
+    pin_hash = hashlib.sha256(event.pin.encode()).hexdigest()
+    volunteer = db.query(Volunteer).filter(Volunteer.pin_hash == pin_hash).first()
     if not volunteer:
-        raise HTTPException(status_code=404, detail="Volunteer fob not recognized")
+        raise HTTPException(status_code=401, detail="PIN not recognized")
 
-    cage = db.query(Cage).filter(Cage.nfc_tag_uid == event.tag_uid).first()
+    cage = db.query(Cage).filter(Cage.nfc_tag_uid == event.tag_uid.upper()).first()
     if not cage:
         raise HTTPException(status_code=404, detail="Cage tag not recognized")
 
