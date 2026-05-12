@@ -147,6 +147,21 @@ Write-Host "Auto-start on boot configured." -ForegroundColor Green
 # Clean up temp key file
 if (Test-Path $keyFile) { Remove-Item $keyFile }
 
+# This block should be inserted BEFORE the "# ── DONE ──" section in deploy-windows-part2.ps1 
+# ── INSTALL AND START HOST AGENT ───────────────────────────────────────────── 
+Write-Host "Installing Sheltrr Host Agent..." -ForegroundColor Yellow 
+
+ # Copy agent to install location 
+Copy-Item "C:\Sheltrr\agent.py" "C:\Sheltrr\agent.py" -Force 
+
+ # Register as startup task"
+
+ $agentAction = New-ScheduledTaskAction `     -Execute "python" `     -Argument "C:\Sheltrr\agent.py" `     -WorkingDirectory "C:\Sheltrr" 
+
+$agentTrigger = New-ScheduledTaskTrigger -AtStartup
+
+ $agentPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest $agentSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)  Register-ScheduledTask -TaskName "SheltrAgent" -Action $agentAction -Trigger $agentTrigger -Principal $agentPrincipal -Settings $agentSettings -Force  # Start it now Start-ScheduledTask -TaskName "SheltrAgent" Write-Host "Host Agent installed and started." -ForegroundColor Green
+
 # ── DONE ──────────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "================================================" -ForegroundColor Cyan
