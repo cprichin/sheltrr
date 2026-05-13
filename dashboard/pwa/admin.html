@@ -466,6 +466,7 @@
       if (res.status === 401) { logout(); return; }
       const data = await res.json();
       showToast(data.message || (tsRunning ? "Tailscale disabled" : "Tailscale enabled"));
+      btn.disabled = false;
       setTimeout(loadStatus, 2000);
     } catch {
       showToast("Error — could not toggle Tailscale");

@@ -10,7 +10,7 @@ import urllib.error
 
 router = APIRouter()
 
-IS_WINDOWS = platform.system() == "Windows"
+USE_HOST_AGENT = os.getenv("USE_HOST_AGENT", "false").lower() == "true"
 TAILSCALE_SOCKET = "/var/run/tailscale/tailscaled.sock"
 HOST_AGENT_URL = "http://host.docker.internal:5555"
 
@@ -67,7 +67,7 @@ def agent_post(path):
 
 def get_tailscale_status():
     """Get Tailscale status — uses host agent on Windows, socket on Linux."""
-    if IS_WINDOWS:
+    if USE_HOST_AGENT:
         data, ok = agent_get("/tailscale/status")
         if ok:
             return data.get("running", False), data.get("ip")
@@ -158,7 +158,7 @@ def get_system_status(authorization: str = Header(None)):
 @router.post("/tailscale/enable")
 def enable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    if IS_WINDOWS:
+    if USE_HOST_AGENT:
         data, ok = agent_post("/tailscale/enable")
         return {"success": ok, "message": data.get("message", "Tailscale enabled")}
     else:
@@ -169,7 +169,7 @@ def enable_tailscale(authorization: str = Header(None)):
 @router.post("/tailscale/disable")
 def disable_tailscale(authorization: str = Header(None)):
     verify_token(authorization)
-    if IS_WINDOWS:
+    if USE_HOST_AGENT:
         data, ok = agent_post("/tailscale/disable")
         return {"success": ok, "message": data.get("message", "Tailscale disabled")}
     else:

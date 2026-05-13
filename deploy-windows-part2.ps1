@@ -90,6 +90,7 @@ Write-Host "PWA config uses dynamic hostname - no changes needed." -ForegroundCo
 # Write .env file
 @"
 ADMIN_PASSWORD=Sheltrr2026
+USE_HOST_AGENT=true
 "@ | Out-File -FilePath "C:\Sheltrr\.env" -Encoding utf8 -NoNewline
 Write-Host "Environment config written." -ForegroundColor Green
 
