@@ -117,10 +117,10 @@ def get_system_status(authorization: str = Header(None)):
             containers[name.strip()] = status.strip()
 
     # Last backup
-    backup_out, _ = run_cmd(
-        "docker logs sheltrr-backup 2>&1 | grep 'Backup complete' | tail -1"
-    )
-    last_backup = backup_out if backup_out else "No backup recorded yet"
+   backup_out, _ = run_cmd(
+    "docker exec sheltrr-backup cat /var/log/sheltrr-backup.log 2>/dev/null | grep 'Backup complete' | tail -1"
+)
+last_backup = backup_out if backup_out else "No backup recorded yet"
 
     # Quick stats
     from database import SessionLocal

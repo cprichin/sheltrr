@@ -8,7 +8,7 @@ RETENTION_DAYS=7
 RCLONE_CONFIG="/tmp/rclone.conf"
 
 echo "Starting backup at ${TIMESTAMP}"
-
+echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting backup" >> /var/log/sheltrr-backup.log
 # Dump the database
 PGPASSWORD=$POSTGRES_PASSWORD pg_dump \
   -h $DB_HOST \
@@ -42,4 +42,5 @@ rclone delete "gdrive:${DRIVE_FOLDER}/" \
   --min-age ${RETENTION_DAYS}d
 
 echo "Cleaned up backups older than ${RETENTION_DAYS} days"
+echo "$(date '+%Y-%m-%d %H:%M:%S') - Backup complete" >> /var/log/sheltrr-backup.log
 echo "Backup complete"

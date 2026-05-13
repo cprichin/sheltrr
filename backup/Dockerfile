@@ -10,9 +10,12 @@ RUN apt-get update && apt-get install -y \
 # Install rclone
 RUN curl https://rclone.org/install.sh | bash
 
+RUN touch /var/log/sheltrr-backup.log
+
 WORKDIR /app
 COPY backup.sh .
 COPY scheduler.sh .
+
 
 RUN dos2unix backup.sh scheduler.sh
 RUN chmod +x backup.sh scheduler.sh
